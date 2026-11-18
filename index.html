@@ -1,0 +1,346 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+  <title>Diana · 雷诺曼夜沙龙 — Salon de Lenormand</title>
+  <meta name="description" content="主理人 Diana 的法式雷诺曼三维夜沙龙。三十六张巴洛克镭射烫金牌，步步引导，连读眼下的真心与走向。" />
+  <meta property="og:type" content="website" />
+  <meta property="og:title" content="Diana · 雷诺曼夜沙龙" />
+  <meta property="og:description" content="三十六张雷诺曼牌。择一件事，听 Diana 连起来读。" />
+  <meta property="og:url" content="https://salon-lenormand.pages.dev/" />
+  <meta property="og:image" content="https://salon-lenormand.pages.dev/share-cover.jpg" />
+  <meta property="og:image:width" content="1200" />
+  <meta property="og:image:height" content="630" />
+  <meta property="og:image:alt" content="Diana 雷诺曼夜沙龙的金边卡牌与深色牌桌" />
+  <meta name="twitter:card" content="summary_large_image" />
+  <link rel="icon" href="./favicon.ico" sizes="64x64" />
+  <link rel="stylesheet" href="./styles.css" />
+  <script type="importmap">
+    {
+      "imports": {
+        "three": "./vendor/three-0.170.0/build/three.module.js",
+        "three/addons/": "./vendor/three-0.170.0/examples/jsm/"
+      }
+    }
+  </script>
+</head>
+<body>
+  <!-- 底层全屏 Three.js + Blender 5.2 皇家丝绒占卜舞台 -->
+  <div class="stage-wrap">
+    <canvas id="salon-canvas" tabindex="0" aria-hidden="true" hidden aria-label="三维牌桌，左右键挑牌，回车翻牌"></canvas>
+    <div class="stage-vignette" aria-hidden="true"></div>
+  </div>
+
+  <!-- 仙女棒星尘与点选四角星绽放画布（亮晶晶微交互层） -->
+  <canvas id="sparkle-canvas" class="sparkle-canvas" aria-hidden="true"></canvas>
+
+  <!-- 顶部极简 Apple 灵动胶囊栏 -->
+  <header class="island-header">
+    <nav class="fluid-island" aria-label="主导航">
+      <button type="button" class="brand-cluster" id="btn-brand-home">
+        <span class="brand-spark" aria-hidden="true">✦</span>
+        <span class="brand-serif">Diana</span>
+        <span class="brand-sub">· 雷诺曼</span>
+      </button>
+
+      <div class="island-actions">
+        <button type="button" class="nav-pill-btn" id="btn-open-compendium">
+          <span>牌典</span>
+        </button>
+
+        <button type="button" class="nav-pill-btn" id="btn-open-journal">
+          <span>手札</span>
+          <span class="journal-count" id="journal-count-badge">0</span>
+        </button>
+
+        <button type="button" class="nav-icon-btn" id="btn-toggle-sound" aria-label="开启沙龙声景" title="沙龙声景">
+          <svg viewBox="0 0 24 24" width="15" height="15" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.4">
+            <path d="M11 5L6 9H3v6h3l5 4V5Z"></path>
+            <path id="sound-wave-path" d="M15.5 8.5a5 5 0 0 1 0 7M18.5 6a8.5 8.5 0 0 1 0 12" opacity="0.32"></path>
+          </svg>
+        </button>
+
+        <button type="button" class="nav-icon-btn" id="btn-toggle-motion" title="暂停或恢复微动效">
+          <svg viewBox="0 0 24 24" width="14" height="14" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.4">
+            <circle cx="12" cy="12" r="8.5"></circle>
+            <path id="motion-icon-glyph" d="M10 9v6M14 9v6"></path>
+          </svg>
+          <span class="sr-only-text" id="motion-status-text">暂停微动效</span>
+        </button>
+      </div>
+    </nav>
+  </header>
+
+  <div id="flat-stage" class="flat-stage" aria-label="平面牌桌"></div>
+  <div class="stage-notice" id="stage-notice">
+    <span id="stage-status" role="status">正在加载三维牌桌…</span>
+    <button type="button" id="btn-retry-3d" class="whisper-link-btn" hidden>重试 3D</button>
+  </div>
+
+  <!-- Diana 步进式轻引导与选择题浮舱（Apple VisionOS 毛玻璃圆角面板，精简少字） -->
+  <main id="diana-dock-wrap" class="diana-dock-wrap">
+    <section class="apple-glass-sheet diana-dock" aria-live="polite">
+      <!-- 顶部步骤指示与跳步操作 -->
+      <div class="dock-meta-row">
+        <div class="step-dots" aria-label="引导进度">
+          <span class="step-dot is-active" data-step-dot="1">01 初识</span>
+          <span class="step-dot" data-step-dot="2">02 择事</span>
+          <span class="step-dot" data-step-dot="3">03 入席</span>
+        </div>
+      </div>
+
+      <!-- 步骤 1：Diana 一句话带你认识雷诺曼（实时点选切换桌上 3D 镭射右牌） -->
+      <div id="step-1" class="dock-step">
+        <h1 class="dock-heading">Diana 的雷诺曼夜沙龙</h1>
+
+        <div id="demo-example" hidden>
+          <p class="demo-caption">雷诺曼单张是词，两张成句。</p>
+          <div class="demo-meaning-pill" id="demo-meaning-pill">
+            <span class="demo-formula" id="demo-formula-text">24 心 × 25 戒指</span>
+            <span class="demo-line" id="demo-line-text">已经在认真考虑彼此的承诺。</span>
+          </div>
+          <div class="choice-row-3" id="demo-pair-choices" role="radiogroup" aria-label="切换示例牌"></div>
+        </div>
+
+        <div class="dock-footer-row">
+          <button type="button" class="whisper-link-btn" id="btn-toggle-demo" aria-controls="demo-example" aria-expanded="false">先看连读示例</button>
+          <button type="button" class="apple-primary-btn" id="btn-to-step-2">
+            <span>开始抽牌</span>
+            <span class="btn-orb" aria-hidden="true">→</span>
+          </button>
+        </div>
+      </div>
+
+      <!-- 步骤 2：全选择题锁定今夜心事 -->
+      <div id="step-2" class="dock-step" hidden>
+        <!-- 2A：四大方向选择 -->
+        <div id="topic-stage-a">
+          <div class="step-title-row">
+            <button type="button" class="whisper-back-btn" id="btn-back-to-1">← 上一步</button>
+            <h2 class="dock-heading">今晚坐下来，想看哪一件事？</h2>
+          </div>
+          <div class="choice-grid-4" id="category-choices"></div>
+        </div>
+
+        <!-- 2B：具体情境四选一（附可选自定义输入） -->
+        <div id="topic-stage-b" hidden>
+          <div class="step-title-row">
+            <button type="button" class="whisper-back-btn" id="btn-back-to-2a">← 换个方向</button>
+            <h2 class="dock-heading" id="subtopic-heading">挑一句最贴近眼下的处境：</h2>
+          </div>
+
+          <div class="situation-list" id="situation-choices"></div>
+
+          <div class="custom-q-row">
+            <button type="button" class="whisper-link-btn" id="btn-toggle-custom-q">✎ 想自己写一句悄悄话</button>
+            <div id="custom-q-box" class="custom-q-inline" hidden>
+              <input
+                type="text"
+                id="custom-question-input"
+                class="apple-inline-input"
+                maxlength="80"
+                enterkeyhint="go"
+                aria-label="你的问题"
+                aria-describedby="custom-q-error"
+                placeholder="写下那件具体的事…"
+              />
+              <button type="button" class="apple-mini-confirm" id="btn-confirm-custom-q">选好了 →</button>
+            </div>
+            <p id="custom-q-error" class="question-error" role="alert" hidden>先写下你想问的事。</p>
+          </div>
+        </div>
+      </div>
+
+      <!-- 步骤 3：四选一铺牌深度（点选即刻启动 3D 镭射洗牌） -->
+      <div id="step-3" class="dock-step" hidden>
+        <div class="step-title-row">
+          <button type="button" class="whisper-back-btn" id="btn-back-to-2b">← 改选问题</button>
+          <h2 class="dock-heading">选一种牌阵，Diana 替你洗牌：</h2>
+        </div>
+
+        <p class="selected-q-pill" id="selected-q-preview"></p>
+
+        <div class="choice-grid-4" id="spread-choice-cards"></div>
+      </div>
+    </section>
+  </main>
+
+  <!-- 牌桌抽牌与 Diana 深度连读分析界面 -->
+  <section id="ritual-overlay" class="ritual-overlay" hidden aria-live="polite">
+    <!-- 顶部极简选牌状态胶囊 -->
+    <div class="ritual-top-bar">
+      <div class="apple-glass-pill ritual-status-pill">
+        <button type="button" class="ghost-pill-btn" id="btn-exit-ritual">← 重选</button>
+        <div class="ritual-status-center">
+          <span class="status-spread-name" id="hud-spread-name">III · 三连叙事</span>
+          <span class="status-progress" id="hud-progress-text">正在洗牌…</span>
+        </div>
+        <div class="ritual-status-actions">
+          <button type="button" class="sparkle-pill-btn" id="btn-quick-draw">✦ 替我直抽</button>
+          <button type="button" class="ghost-pill-btn" id="btn-reshuffle">重洗</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- 右侧 Diana 深度解牌手记面板（唯一详尽展开人味化解读的界面） -->
+    <aside id="reading-panel" class="reading-panel" hidden aria-label="Diana 雷诺曼连读分析">
+      <div class="apple-glass-sheet reading-sheet">
+        <div class="reading-controls">
+          <button type="button" id="btn-expand-reading" class="ghost-pill-btn" aria-expanded="false" aria-controls="reading-content">展开解读</button>
+        </div>
+        <div class="reading-scroll-inner" id="reading-content" tabindex="0">
+          <div class="reading-header">
+            <div class="reading-header-top">
+              <span class="diana-tag" id="reading-focus-tag">Diana · 情感切面</span>
+              <button type="button" class="voice-read-pill" id="btn-voice-read">
+                <span class="voice-eq" aria-hidden="true"><i></i><i></i><i></i></span>
+                <span id="voice-read-label">听 Diana 轻读</span>
+              </button>
+            </div>
+            <h2 class="reading-title" id="reading-spread-heading">III · 三连叙事</h2>
+            <p class="reading-question" id="reading-question-line"></p>
+            <p class="reading-climate" id="reading-climate-line"></p>
+          </div>
+
+          <!-- 牌眼聚光（支持 3D 镭射倾斜悬停） -->
+          <div class="anchor-spotlight" id="anchor-spotlight"></div>
+
+          <!-- 双牌连读互动词组（轻触点亮左侧 3D 金丝星桥） -->
+          <div class="reading-block">
+            <div class="block-head">
+              <h3>双牌连读 · 词句拆解</h3>
+              <span>点选词组可标出两张牌</span>
+            </div>
+            <div class="pairings-list" id="pairings-list"></div>
+          </div>
+
+          <!-- Diana 下一步行动选择题（互动小巧思） -->
+          <div class="reading-block">
+            <div class="block-head">
+              <h3>Diana 行动推演 · 二选一</h3>
+              <span>点选看看不同做法的走向</span>
+            </div>
+            <div class="action-choices-wrap" id="action-choices-wrap"></div>
+            <div class="action-choice-reply" id="action-choice-reply" hidden></div>
+          </div>
+
+          <!-- 逐位落牌细读 -->
+          <div class="reading-block">
+            <div class="block-head">
+              <h3>逐位落牌细读</h3>
+              <span>点击单牌可看镭射大图</span>
+            </div>
+            <div class="drawn-cards-strip" id="drawn-cards-strip"></div>
+          </div>
+
+          <!-- Diana 临别夜话 -->
+          <div class="closing-whisper-box">
+            <span class="diana-tag">DIANA 临别夜话</span>
+            <p id="reading-closing-text"></p>
+          </div>
+
+        </div>
+        <div class="reading-footer-actions">
+            <button type="button" class="apple-primary-btn" id="btn-save-reading">
+              <span id="save-reading-label">收入手札</span>
+              <span class="btn-orb" aria-hidden="true">✦</span>
+            </button>
+            <button type="button" class="ghost-pill-btn" id="btn-copy-reading">复制手记</button>
+            <button type="button" class="ghost-pill-btn" id="btn-new-question">再问一事</button>
+        </div>
+      </div>
+    </aside>
+  </section>
+
+  <div id="inspect-actions" class="apple-glass-pill inspect-actions" role="group" aria-label="手持牌" hidden>
+    <button type="button" class="inspect-action inspect-meaning" id="btn-inspect-meaning" aria-haspopup="dialog">
+      <span>查看牌义</span>
+      <svg viewBox="0 0 16 16" width="13" height="13" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M4 12l8-8M6 4h6v6"/>
+      </svg>
+    </button>
+    <button type="button" class="inspect-action" id="btn-inspect-dismiss">
+      <span>放回桌面</span>
+      <svg viewBox="0 0 16 16" width="13" height="13" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round">
+        <path d="m5 5 6 6m0-6-6 6"/>
+      </svg>
+    </button>
+  </div>
+
+  <!-- 原生模态框 1：36张全息镭射牌典 -->
+  <dialog id="compendium-dialog" class="salon-dialog salon-dialog-wide" closedby="any" aria-labelledby="compendium-title">
+    <div class="dialog-inner">
+      <header class="dialog-head">
+        <div>
+          <span class="diana-tag">DIANA'S HOLOGRAPHIC DECK</span>
+          <h2 id="compendium-title">三十六张皇家镭射牌典</h2>
+        </div>
+        <form method="dialog">
+          <button type="submit" class="dialog-close-btn" autofocus aria-label="关闭牌典">✕</button>
+        </form>
+      </header>
+
+      <div class="compendium-filters" id="compendium-filters" role="tablist" aria-label="按色调筛选">
+        <button type="button" class="filter-chip is-active" data-filter="all">全部 36</button>
+        <button type="button" class="filter-chip" data-filter="暖调">暖调</button>
+        <button type="button" class="filter-chip" data-filter="中性">中性</button>
+        <button type="button" class="filter-chip" data-filter="冷调">冷调</button>
+        <button type="button" class="filter-chip" data-filter="变数">变数</button>
+      </div>
+
+      <div class="compendium-grid" id="compendium-grid"></div>
+    </div>
+  </dialog>
+
+  <!-- 原生模态框 2：单张镭射闪卡详览 -->
+  <dialog id="card-detail-dialog" class="salon-dialog salon-dialog-medium" closedby="any" aria-labelledby="detail-card-title">
+    <div class="dialog-inner">
+      <header class="dialog-head">
+        <div>
+          <span class="diana-tag" id="detail-card-meta">01 · LE CAVALIER · 9♥</span>
+          <h2 id="detail-card-title">骑士</h2>
+        </div>
+        <form method="dialog">
+          <button type="submit" class="dialog-close-btn" autofocus aria-label="关闭单牌详览">✕</button>
+        </form>
+      </header>
+      <div class="card-detail-body" id="card-detail-body"></div>
+    </div>
+  </dialog>
+
+  <!-- 原生模态框 3：Diana 私藏手札 -->
+  <dialog id="journal-dialog" class="salon-dialog salon-dialog-medium" closedby="any" aria-labelledby="journal-dialog-title">
+    <div class="dialog-inner">
+      <header class="dialog-head">
+        <div>
+          <span class="diana-tag">PRIVATE JOURNAL · 仅存本机</span>
+          <h2 id="journal-dialog-title">Diana 私藏手札</h2>
+        </div>
+        <form method="dialog">
+          <button type="submit" class="dialog-close-btn" autofocus aria-label="关闭私藏手札">✕</button>
+        </form>
+      </header>
+      <button type="button" id="btn-export-journal" class="ghost-pill-btn journal-export" hidden>导出手札</button>
+      <div class="journal-entries" id="journal-entries"></div>
+    </div>
+  </dialog>
+
+  <dialog id="saved-reading-dialog" class="salon-dialog salon-dialog-medium" closedby="any" aria-labelledby="saved-reading-title">
+    <div class="dialog-inner">
+      <header class="dialog-head">
+        <h2 id="saved-reading-title">当时的解读</h2>
+        <form method="dialog">
+          <button type="submit" class="dialog-close-btn" autofocus aria-label="返回手札">✕</button>
+        </form>
+      </header>
+      <div id="saved-reading-body" class="saved-reading-body"></div>
+    </div>
+  </dialog>
+
+  <!-- 星语轻提示气泡 -->
+  <div id="salon-toast" class="salon-toast" role="status" aria-live="polite" hidden></div>
+
+  <script type="module" src="./js/main.js"></script>
+</body>
+</html>

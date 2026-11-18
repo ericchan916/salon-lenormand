@@ -1,0 +1,1899 @@
+/* Diana · 雷诺曼夜沙龙 — Apple Design 空间毛玻璃 + 光学镭射闪卡（致敬 pokemon-cards-css）样式系统 */
+
+:root {
+  --bg-obsidian: #0c0612;
+  --glass-bg: rgba(24, 13, 30, 0.68);
+  --glass-bg-heavy: rgba(20, 11, 26, 0.84);
+  --glass-border: rgba(255, 238, 220, 0.16);
+  --glass-top-gleam: rgba(255, 250, 244, 0.28);
+
+  --text-primary: #fbf5ee;
+  --text-secondary: rgba(242, 226, 218, 0.78);
+  --text-tertiary: rgba(226, 204, 196, 0.52);
+
+  --gold-bright: #fae0b0;
+  --gold-mid: #dfb674;
+  --rose-glow: #eba2b8;
+
+  --font-serif-en: "Cormorant Garamond", Georgia, serif;
+  --font-serif-zh: "Noto Serif SC", "Songti SC", serif;
+  --font-ui: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Plus Jakarta Sans", "PingFang SC", sans-serif;
+
+  --ease-apple: cubic-bezier(0.32, 0.72, 0, 1);
+}
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+html,
+body {
+  margin: 0;
+  padding: 0;
+  width: 100%;
+  height: 100dvh;
+  overflow: hidden;
+  background-color: var(--bg-obsidian);
+  color: var(--text-primary);
+  font-family: var(--font-ui);
+  -webkit-font-smoothing: antialiased;
+}
+
+/* 1. 全屏 Three.js 舞台与星芒画布 */
+.stage-wrap {
+  position: fixed;
+  inset: 0;
+  z-index: 0;
+}
+
+#salon-canvas {
+  display: block;
+  width: 100%;
+  height: 100%;
+  touch-action: none;
+  touch-action: pinch-zoom;
+}
+
+.stage-vignette {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background:
+    radial-gradient(circle at 50% 42%, rgba(16, 8, 22, 0) 34%, rgba(9, 4, 14, 0.66) 100%),
+    linear-gradient(180deg, rgba(10, 4, 15, 0.35) 0%, rgba(10, 4, 15, 0) 24%, rgba(10, 4, 15, 0.72) 100%);
+}
+
+.sparkle-canvas {
+  position: fixed;
+  inset: 0;
+  z-index: 35;
+  pointer-events: none;
+}
+
+/* 2. Apple VisionOS 毛玻璃基础材质与边缘追光 */
+.apple-glass-sheet {
+  background: var(--glass-bg);
+  backdrop-filter: blur(28px) saturate(185%);
+  -webkit-backdrop-filter: blur(28px) saturate(185%);
+  border: 1px solid var(--glass-border);
+  border-radius: 28px;
+  box-shadow:
+    inset 0 1px 0.5px var(--glass-top-gleam),
+    0 28px 68px -18px rgba(3, 1, 8, 0.78);
+}
+
+.apple-glass-pill {
+  background: var(--glass-bg-heavy);
+  backdrop-filter: blur(24px) saturate(180%);
+  -webkit-backdrop-filter: blur(24px) saturate(180%);
+  border: 1px solid var(--glass-border);
+  border-radius: 999px;
+  box-shadow:
+    inset 0 1px 0.5px var(--glass-top-gleam),
+    0 18px 42px -12px rgba(3, 1, 8, 0.7);
+}
+
+@media (prefers-reduced-transparency: reduce) {
+  .apple-glass-sheet,
+  .apple-glass-pill,
+  .fluid-island {
+    background: #1a0e22 !important;
+    backdrop-filter: none !important;
+    -webkit-backdrop-filter: none !important;
+  }
+}
+
+@media (prefers-contrast: more) {
+  .apple-glass-sheet,
+  .apple-glass-pill,
+  .fluid-island {
+    background: #120818 !important;
+    border-color: rgba(255, 232, 192, 0.65) !important;
+  }
+}
+
+/* 3. 顶部灵动岛导航（紧凑适配 390px 移动端，零溢出） */
+.island-header {
+  position: fixed;
+  top: env(safe-area-inset-top);
+  left: env(safe-area-inset-left);
+  right: env(safe-area-inset-right);
+  z-index: 30;
+  display: flex;
+  justify-content: center;
+  padding: 0.9rem 0.75rem 0;
+  pointer-events: none;
+}
+
+.fluid-island {
+  pointer-events: auto;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.65rem;
+  max-width: calc(100vw - 1.2rem);
+  padding: 0.38rem 0.48rem 0.38rem 0.95rem;
+  border-radius: 999px;
+  background: rgba(22, 12, 28, 0.72);
+  backdrop-filter: blur(24px) saturate(180%);
+  -webkit-backdrop-filter: blur(24px) saturate(180%);
+  border: 1px solid var(--glass-border);
+  box-shadow:
+    inset 0 1px 0.5px var(--glass-top-gleam),
+    0 14px 34px -10px rgba(0, 0, 0, 0.65);
+}
+
+.brand-cluster {
+  appearance: none;
+  border: none;
+  background: none;
+  padding: 0;
+  color: var(--text-primary);
+  display: inline-flex;
+  align-items: center;
+  gap: 0.32rem;
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+.brand-spark {
+  color: var(--gold-bright);
+  font-size: 0.78rem;
+  text-shadow: 0 0 10px rgba(250, 224, 176, 0.85);
+}
+
+.brand-serif {
+  font-family: var(--font-serif-en);
+  font-size: 1.12rem;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+}
+
+.brand-sub {
+  font-family: var(--font-serif-zh);
+  font-size: 0.82rem;
+  color: var(--text-secondary);
+}
+
+.island-actions {
+  display: flex;
+  align-items: center;
+  gap: 0.32rem;
+}
+
+.nav-pill-btn,
+.nav-icon-btn {
+  appearance: none;
+  border: 1px solid rgba(255, 240, 224, 0.08);
+  background: rgba(255, 246, 238, 0.06);
+  color: var(--text-secondary);
+  border-radius: 999px;
+  padding: 0.36rem 0.72rem;
+  font-family: var(--font-ui);
+  font-size: 0.76rem;
+  font-weight: 500;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.32rem;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: background-color 0.25s var(--ease-apple), color 0.25s var(--ease-apple), transform 0.1s ease-out;
+}
+
+.nav-icon-btn {
+  padding: 0.38rem 0.54rem;
+}
+
+.nav-pill-btn:hover,
+.nav-icon-btn:hover {
+  background: rgba(250, 224, 176, 0.15);
+  color: var(--text-primary);
+}
+
+/* Apple 准则 1：按下瞬间立刻缩放反馈 */
+.nav-pill-btn:active,
+.nav-icon-btn:active,
+.apple-primary-btn:active,
+.ghost-pill-btn:active,
+.sparkle-pill-btn:active,
+.apple-choice-card:active,
+.apple-pill-choice:active {
+  transform: scale(0.965);
+  transition: transform 90ms ease-out;
+}
+
+.nav-icon-btn.is-active {
+  background: rgba(250, 224, 176, 0.22);
+  border-color: rgba(250, 224, 176, 0.45);
+  color: var(--gold-bright);
+}
+
+.sr-only-text {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+}
+
+.journal-count {
+  min-width: 1.08rem;
+  height: 1.08rem;
+  padding: 0 0.28rem;
+  border-radius: 999px;
+  background: rgba(250, 224, 176, 0.22);
+  color: var(--gold-bright);
+  font-size: 0.68rem;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* 4. 底部 Diana 步进式轻引导浮舱（少字高级，让出上方 68% 3D 舞台） */
+.diana-dock-wrap {
+  position: fixed;
+  left: env(safe-area-inset-left);
+  right: env(safe-area-inset-right);
+  bottom: calc(1.25rem + env(safe-area-inset-bottom));
+  z-index: 20;
+  display: flex;
+  justify-content: center;
+  padding: 0 0.9rem;
+  pointer-events: none;
+  transition: opacity 0.45s var(--ease-apple), transform 0.45s var(--ease-apple);
+}
+
+body.is-ritual-mode .diana-dock-wrap {
+  opacity: 0;
+  pointer-events: none !important;
+  @media (prefers-reduced-motion: no-preference) {
+    transform: translateY(22px) scale(0.97);
+  }
+}
+
+.diana-dock {
+  pointer-events: auto;
+  width: min(620px, 100%);
+  padding: 1.1rem 1.25rem 1.2rem;
+}
+
+.dock-meta-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 0.65rem;
+}
+
+.step-dots {
+  display: inline-flex;
+  gap: 0.38rem;
+}
+
+.step-dot {
+  font-size: 0.68rem;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  padding: 0.2rem 0.55rem;
+  border-radius: 999px;
+  color: var(--text-tertiary);
+  background: rgba(255, 255, 255, 0.04);
+  transition: all 0.3s var(--ease-apple);
+}
+
+.step-dot.is-active {
+  color: #1c0d1b;
+  background: linear-gradient(135deg, var(--gold-bright), var(--rose-glow));
+}
+
+.whisper-link-btn,
+.whisper-back-btn {
+  appearance: none;
+  border: none;
+  background: none;
+  padding: 0.15rem 0.3rem;
+  color: var(--text-tertiary);
+  font-family: var(--font-ui);
+  font-size: 0.74rem;
+  cursor: pointer;
+  transition: color 0.25s var(--ease-apple);
+}
+
+.whisper-link-btn:hover,
+.whisper-back-btn:hover {
+  color: var(--gold-bright);
+}
+
+.dock-step[hidden] {
+  display: none !important;
+}
+
+.step-title-row {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  margin-bottom: 0.75rem;
+}
+
+.dock-heading {
+  margin: 0 0 0.65rem;
+  font-family: var(--font-serif-zh);
+  font-weight: 500;
+  font-size: clamp(1.06rem, 2vw, 1.26rem);
+  letter-spacing: -0.01em;
+  line-height: 1.35;
+}
+
+.step-title-row .dock-heading {
+  margin: 0;
+}
+
+/* 步骤 1 连读实时胶囊与三选一按钮 */
+.demo-meaning-pill {
+  padding: 0.58rem 0.88rem;
+  border-radius: 16px;
+  background: rgba(255, 245, 232, 0.06);
+  border: 1px solid rgba(250, 224, 176, 0.22);
+  margin-bottom: 0.72rem;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 0.5rem;
+}
+
+.demo-formula {
+  font-size: 0.78rem;
+  font-weight: 600;
+  color: var(--gold-bright);
+  white-space: nowrap;
+}
+
+.demo-line {
+  font-size: 0.82rem;
+  color: var(--text-primary);
+}
+
+.choice-row-3 {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 0.5rem;
+  margin-bottom: 0.85rem;
+}
+
+/* Apple VisionOS 边缘追光选择题卡片 */
+.apple-choice-card,
+.apple-pill-choice {
+  --glow-x: 50%;
+  --glow-y: 50%;
+  position: relative;
+  appearance: none;
+  border: 1px solid rgba(255, 240, 226, 0.14);
+  border-radius: 18px;
+  background:
+    radial-gradient(120px circle at var(--glow-x) var(--glow-y), rgba(250, 224, 176, 0.20), transparent 70%),
+    rgba(255, 248, 242, 0.055);
+  color: var(--text-primary);
+  font-family: var(--font-ui);
+  cursor: pointer;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.14);
+  transition:
+    border-color 0.28s var(--ease-apple),
+    background-color 0.28s var(--ease-apple),
+    transform 0.12s ease-out;
+}
+
+.apple-choice-card:hover,
+.apple-pill-choice:hover {
+  border-color: rgba(250, 224, 176, 0.48);
+}
+
+.apple-pill-choice {
+  padding: 0.56rem 0.65rem;
+  font-size: 0.8rem;
+  font-weight: 500;
+  text-align: center;
+}
+
+.apple-pill-choice.is-selected,
+.apple-choice-card.is-selected {
+  border-color: var(--gold-bright);
+  background: linear-gradient(135deg, rgba(250, 224, 176, 0.24), rgba(235, 162, 184, 0.18));
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.35),
+    0 8px 22px -8px rgba(250, 224, 176, 0.45);
+}
+
+.dock-footer-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.tiny-hint {
+  font-size: 0.73rem;
+  color: var(--text-tertiary);
+}
+
+.apple-primary-btn {
+  appearance: none;
+  border: 1px solid rgba(255, 242, 214, 0.65);
+  border-radius: 999px;
+  padding: 0.42rem 0.45rem 0.42rem 1.15rem;
+  background: linear-gradient(135deg, #fbe3b5 0%, #dfb272 52%, #eba6bc 100%);
+  color: #1c0c1b;
+  font-family: var(--font-ui);
+  font-size: 0.83rem;
+  font-weight: 600;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.58rem;
+  cursor: pointer;
+  box-shadow: 0 10px 28px -8px rgba(242, 198, 138, 0.58);
+  transition: filter 0.25s var(--ease-apple), transform 0.1s ease-out;
+}
+
+.apple-primary-btn:hover {
+  filter: brightness(1.06);
+}
+
+.btn-orb {
+  width: 1.72rem;
+  height: 1.72rem;
+  border-radius: 50%;
+  background: rgba(28, 12, 27, 0.14);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.82rem;
+}
+
+/* 步骤 2 与步骤 3 选择题矩阵 */
+.choice-grid-4 {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 0.55rem;
+}
+
+.apple-choice-card {
+  padding: 0.78rem 0.68rem;
+  text-align: center;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.24rem;
+}
+
+.choice-icon {
+  font-size: 1.15rem;
+  color: var(--gold-bright);
+  text-shadow: 0 0 12px rgba(250, 224, 176, 0.6);
+}
+
+.choice-roman {
+  font-family: var(--font-serif-en);
+  font-size: 1.22rem;
+  font-weight: 700;
+  color: var(--gold-bright);
+}
+
+.choice-title {
+  font-size: 0.84rem;
+  font-weight: 600;
+}
+
+.choice-sub {
+  font-size: 0.68rem;
+  color: var(--text-tertiary);
+}
+
+.situation-list {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.48rem;
+}
+
+.situation-btn {
+  text-align: left;
+  padding: 0.64rem 0.82rem;
+  font-size: 0.8rem;
+  line-height: 1.45;
+  border-radius: 16px;
+}
+
+.custom-q-row {
+  margin-top: 0.58rem;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+}
+
+.custom-q-inline {
+  display: flex;
+  flex: 1;
+  gap: 0.42rem;
+  min-width: 240px;
+}
+
+.custom-q-inline[hidden] {
+  display: none !important;
+}
+
+.apple-inline-input {
+  flex: 1;
+  padding: 0.42rem 0.78rem;
+  border-radius: 999px;
+  border: 1px solid rgba(250, 224, 176, 0.3);
+  background: rgba(10, 4, 14, 0.65);
+  color: var(--text-primary);
+  font-family: var(--font-ui);
+  font-size: 0.8rem;
+}
+
+.apple-inline-input:focus {
+  outline: none;
+  border-color: var(--gold-bright);
+}
+
+.apple-mini-confirm {
+  appearance: none;
+  border: none;
+  border-radius: 999px;
+  padding: 0.42rem 0.82rem;
+  background: var(--gold-bright);
+  color: #1c0c1b;
+  font-size: 0.76rem;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.selected-q-pill {
+  margin: 0 0 0.7rem;
+  padding: 0.42rem 0.78rem;
+  border-radius: 12px;
+  background: rgba(250, 224, 176, 0.08);
+  color: var(--gold-bright);
+  font-size: 0.78rem;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* 5. 抽牌 HUD 与 Diana 深度分析面板 */
+.ritual-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 22;
+  pointer-events: none;
+}
+
+.ritual-overlay[hidden] {
+  display: none !important;
+}
+
+.ritual-top-bar {
+  position: fixed;
+  top: calc(4.1rem + env(safe-area-inset-top));
+  left: 50%;
+  transform: translateX(-50%);
+  pointer-events: auto;
+  width: max-content;
+  max-width: calc(100vw - 1.2rem);
+}
+
+.ritual-status-pill {
+  padding: 0.36rem 0.52rem;
+  display: flex;
+  align-items: center;
+  gap: 0.65rem;
+}
+
+.ritual-status-center {
+  display: flex;
+  align-items: center;
+  gap: 0.48rem;
+  font-size: 0.8rem;
+  white-space: nowrap;
+}
+
+.status-spread-name {
+  color: var(--gold-bright);
+  font-weight: 600;
+}
+
+.ritual-status-actions {
+  display: flex;
+  gap: 0.35rem;
+}
+
+.ghost-pill-btn,
+.sparkle-pill-btn {
+  appearance: none;
+  border: 1px solid rgba(255, 240, 224, 0.16);
+  background: rgba(255, 248, 240, 0.07);
+  color: var(--text-secondary);
+  border-radius: 999px;
+  padding: 0.36rem 0.75rem;
+  font-family: var(--font-ui);
+  font-size: 0.75rem;
+  font-weight: 500;
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+.sparkle-pill-btn {
+  border-color: rgba(250, 224, 176, 0.48);
+  background: linear-gradient(135deg, rgba(250, 224, 176, 0.22), rgba(235, 162, 184, 0.18));
+  color: var(--gold-bright);
+}
+
+.ghost-pill-btn:hover,
+.sparkle-pill-btn:hover {
+  border-color: var(--gold-bright);
+  color: var(--text-primary);
+}
+
+/* 右侧 Diana 深度解读面板（对称滑入滑出，不生硬切屏） */
+.reading-panel {
+  pointer-events: none;
+  position: fixed;
+  top: calc(7.4rem + env(safe-area-inset-top));
+  right: calc(1.25rem + env(safe-area-inset-right));
+  bottom: calc(1.25rem + env(safe-area-inset-bottom));
+  width: min(445px, calc(45vw - 1.25rem - env(safe-area-inset-right)));
+  display: flex;
+  opacity: 0;
+  transition: opacity 0.42s var(--ease-apple), transform 0.42s var(--ease-apple);
+  @media (prefers-reduced-motion: no-preference) {
+    transform: translate3d(26px, 0, 0) scale(0.985);
+  }
+}
+
+.reading-panel.is-open {
+  pointer-events: auto;
+  opacity: 1;
+  transform: translate3d(0, 0, 0) scale(1);
+}
+
+.reading-panel[hidden] {
+  display: none !important;
+}
+
+body.is-inspecting .diana-dock-wrap,
+body.is-inspecting .reading-panel {
+  opacity: 0;
+}
+
+.inspect-actions {
+  position: fixed;
+  inset-inline: 0;
+  bottom: calc(1.25rem + env(safe-area-inset-bottom));
+  z-index: 24;
+  display: flex;
+  gap: 0.18rem;
+  width: max-content;
+  margin-inline: auto;
+  padding: 0.24rem;
+}
+
+.inspect-actions[hidden] {
+  display: none;
+}
+
+.inspect-action {
+  appearance: none;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.38rem;
+  min-height: 2.25rem;
+  padding: 0 0.82rem;
+  border: 0;
+  border-radius: 999px;
+  background: transparent;
+  color: var(--text-secondary);
+  font: 500 0.8rem var(--font-ui);
+  white-space: nowrap;
+  cursor: pointer;
+  transition: background-color 160ms var(--ease-apple), color 160ms var(--ease-apple);
+}
+
+.inspect-meaning {
+  background: rgba(250, 224, 176, 0.12);
+  color: var(--gold-bright);
+}
+
+@media (hover: hover) {
+  .inspect-action:hover {
+    background: rgba(250, 224, 176, 0.17);
+    color: var(--text-primary);
+  }
+}
+
+.inspect-action:active {
+  background: rgba(250, 224, 176, 0.26);
+}
+
+.inspect-action:focus-visible {
+  outline: 1px solid var(--gold-bright);
+  outline-offset: -2px;
+}
+
+@media (pointer: coarse) {
+  .inspect-action {
+    min-height: 44px;
+  }
+}
+
+@media (min-width: 768px) and (min-height: 540px) {
+  .inspect-actions {
+    bottom: calc(clamp(1.25rem, 8dvh, 5rem) + env(safe-area-inset-bottom));
+  }
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  body:not(.is-motion-paused) .inspect-actions:not([hidden]) {
+    animation: inspect-actions-in 240ms var(--ease-apple);
+  }
+
+  body:not(.is-motion-paused) .inspect-action:active {
+    transform: scale(0.965);
+  }
+}
+
+@keyframes inspect-actions-in {
+  from { opacity: 0; transform: translateY(6px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.reading-header-top {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.voice-read-pill {
+  appearance: none;
+  border: 1px solid rgba(250, 224, 176, 0.32);
+  background: rgba(250, 224, 176, 0.10);
+  color: var(--gold-bright);
+  border-radius: 999px;
+  padding: 0.28rem 0.68rem;
+  font-family: var(--font-ui);
+  font-size: 0.72rem;
+  font-weight: 500;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.36rem;
+  cursor: pointer;
+  transition: background-color 0.25s var(--ease-apple), border-color 0.25s var(--ease-apple), transform 0.1s ease-out;
+}
+
+.voice-read-pill:hover {
+  background: rgba(250, 224, 176, 0.22);
+  border-color: var(--gold-bright);
+}
+
+.voice-read-pill.is-speaking {
+  background: linear-gradient(135deg, rgba(250, 224, 176, 0.28), rgba(235, 162, 184, 0.24));
+  border-color: var(--gold-bright);
+}
+
+.voice-eq {
+  display: inline-flex;
+  align-items: flex-end;
+  gap: 2px;
+  height: 11px;
+}
+
+.voice-eq i {
+  display: block;
+  width: 2px;
+  height: 5px;
+  border-radius: 2px;
+  background: currentColor;
+}
+
+.voice-eq i:nth-child(2) {
+  height: 9px;
+}
+
+@keyframes eqBounce {
+  0%, 100% { transform: scaleY(0.45); }
+  50% { transform: scaleY(1.15); }
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .voice-read-pill.is-speaking .voice-eq i {
+    animation: eqBounce 0.7s ease-in-out infinite;
+  }
+  .voice-read-pill.is-speaking .voice-eq i:nth-child(2) {
+    animation-delay: 0.16s;
+  }
+  .voice-read-pill.is-speaking .voice-eq i:nth-child(3) {
+    animation-delay: 0.32s;
+  }
+}
+
+.reading-sheet {
+  width: 100%;
+  height: 100%;
+  display: flex;
+  overflow: hidden;
+}
+
+.reading-scroll-inner {
+  width: 100%;
+  height: 100%;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  padding: 1.35rem 1.4rem;
+  scrollbar-width: thin;
+  scrollbar-color: rgba(250, 224, 176, 0.26) transparent;
+}
+
+.reading-scroll-inner::-webkit-scrollbar,
+.dialog-inner::-webkit-scrollbar {
+  width: 5px;
+}
+
+.reading-scroll-inner::-webkit-scrollbar-track,
+.dialog-inner::-webkit-scrollbar-track {
+  background: transparent;
+  margin: 18px 0;
+}
+
+.reading-scroll-inner::-webkit-scrollbar-thumb,
+.dialog-inner::-webkit-scrollbar-thumb {
+  background: rgba(250, 224, 176, 0.26);
+  border-radius: 999px;
+}
+
+.diana-tag {
+  display: inline-block;
+  font-size: 0.68rem;
+  font-weight: 600;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--gold-bright);
+}
+
+.reading-title {
+  margin: 0.35rem 0 0.5rem;
+  font-family: var(--font-serif-zh);
+  font-weight: 500;
+  font-size: 1.3rem;
+}
+
+.reading-question {
+  margin: 0 0 0.5rem;
+  font-size: 0.86rem;
+  color: var(--gold-bright);
+}
+
+.reading-climate {
+  margin: 0;
+  font-size: 0.86rem;
+  line-height: 1.72;
+  color: var(--text-secondary);
+}
+
+.anchor-spotlight {
+  margin: 1.1rem 0;
+  padding: 0.95rem;
+  border-radius: 20px;
+  background: rgba(250, 224, 176, 0.08);
+  border: 1px solid rgba(250, 224, 176, 0.24);
+  display: grid;
+  grid-template-columns: 76px 1fr;
+  gap: 0.9rem;
+  align-items: center;
+}
+
+.anchor-meta h4 {
+  margin: 0.2rem 0 0.35rem;
+  font-family: var(--font-serif-zh);
+  font-size: 1rem;
+}
+
+.anchor-meta p {
+  margin: 0;
+  font-size: 0.83rem;
+  line-height: 1.66;
+  color: var(--text-secondary);
+}
+
+.reading-block {
+  margin-top: 1.2rem;
+}
+
+.block-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  margin-bottom: 0.58rem;
+}
+
+.block-head h3 {
+  margin: 0;
+  font-family: var(--font-serif-zh);
+  font-size: 0.95rem;
+  font-weight: 500;
+}
+
+.block-head span {
+  font-size: 0.7rem;
+  color: var(--text-tertiary);
+}
+
+.pairings-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.55rem;
+}
+
+.pair-item-btn {
+  appearance: none;
+  width: 100%;
+  text-align: left;
+  padding: 0.78rem 0.92rem;
+  border-radius: 18px;
+  border: 1px solid rgba(255, 240, 224, 0.12);
+  background: rgba(10, 4, 14, 0.48);
+  color: var(--text-primary);
+  cursor: pointer;
+  transition: border-color 0.25s var(--ease-apple), background-color 0.25s var(--ease-apple);
+}
+
+.pair-item-btn:hover,
+.pair-item-btn.is-highlighted {
+  background: rgba(250, 224, 176, 0.13);
+  border-color: var(--gold-bright);
+}
+
+.pair-item-top {
+  display: flex;
+  justify-content: space-between;
+  gap: 0.5rem;
+  margin-bottom: 0.3rem;
+}
+
+.pair-item-title {
+  font-size: 0.72rem;
+  color: var(--text-tertiary);
+}
+
+.pair-item-formula {
+  font-size: 0.79rem;
+  font-weight: 600;
+  color: var(--gold-bright);
+}
+
+.pair-item-desc {
+  margin: 0;
+  font-size: 0.83rem;
+  line-height: 1.66;
+  color: var(--text-secondary);
+}
+
+/* Diana 行动二选一推演 */
+.action-choices-wrap {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.48rem;
+}
+
+.action-choice-reply {
+  margin-top: 0.55rem;
+  padding: 0.78rem 0.92rem;
+  border-radius: 16px;
+  background: rgba(235, 162, 184, 0.12);
+  border: 1px solid rgba(235, 162, 184, 0.32);
+  font-size: 0.83rem;
+  line-height: 1.66;
+  color: var(--text-primary);
+}
+
+.drawn-cards-strip {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.drawn-card-row {
+  appearance: none;
+  width: 100%;
+  text-align: left;
+  display: grid;
+  grid-template-columns: 46px 1fr;
+  gap: 0.75rem;
+  align-items: center;
+  padding: 0.55rem 0.72rem;
+  border-radius: 16px;
+  border: 1px solid rgba(255, 240, 224, 0.08);
+  background: rgba(10, 4, 14, 0.42);
+  color: var(--text-primary);
+  cursor: pointer;
+}
+
+.drawn-card-row:hover {
+  border-color: rgba(250, 224, 176, 0.42);
+}
+
+.drawn-card-row img {
+  width: 46px;
+  aspect-ratio: 2 / 3;
+  border-radius: 8px;
+  object-fit: cover;
+  display: block;
+}
+
+.drawn-row-title {
+  display: block;
+  font-size: 0.82rem;
+  font-weight: 600;
+}
+
+.drawn-row-slot {
+  font-size: 0.72rem;
+  color: var(--gold-bright);
+  margin-right: 0.35rem;
+}
+
+.drawn-row-hint {
+  display: block;
+  margin-top: 0.16rem;
+  font-size: 0.78rem;
+  line-height: 1.55;
+  color: var(--text-secondary);
+}
+
+.closing-whisper-box {
+  margin-top: 1.2rem;
+  padding: 0.95rem 1.05rem;
+  border-radius: 18px;
+  background: linear-gradient(145deg, rgba(64, 28, 56, 0.45), rgba(22, 11, 26, 0.68));
+  border: 1px solid rgba(235, 162, 184, 0.28);
+}
+
+.closing-whisper-box p {
+  margin: 0.4rem 0 0;
+  font-size: 0.85rem;
+  line-height: 1.72;
+}
+
+.reading-footer-actions {
+  margin-top: 1.15rem;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+/* 6. 2D 裸眼 3D 多层景深暗盒卡（Diorama Shadowbox）+ 光学镭射闪卡效果 */
+.holo-card-surface {
+  position: relative;
+  aspect-ratio: 2 / 3;
+}
+
+.diorama-face {
+  pointer-events: none;
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+  border-radius: 14px;
+  background: #211323;
+  box-shadow: 0 0 0 1px rgba(250, 224, 176, 0.45), 0 12px 24px -14px #000;
+}
+
+.diorama-name {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  padding: 0.3rem;
+  text-align: center;
+  color: var(--gold-bright);
+  font: 500 clamp(0.62rem, 1.75vw, 0.9rem) var(--font-serif-zh);
+}
+
+.diorama-card .diorama-art-img {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  visibility: hidden;
+}
+
+.diorama-face.has-art .diorama-art-img {
+  visibility: visible;
+}
+
+.diorama-face.has-art .diorama-name {
+  visibility: hidden;
+}
+
+/* 7. 原生 <dialog> 顶层模态框（modern-web-guidance 合规） */
+dialog:modal {
+  overscroll-behavior: contain;
+}
+
+dialog::backdrop {
+  overflow: hidden;
+  overscroll-behavior: contain;
+}
+
+.salon-dialog {
+  padding: 0;
+  border: 1px solid rgba(250, 224, 176, 0.34);
+  border-radius: 28px;
+  background: rgba(24, 13, 30, 0.88);
+  backdrop-filter: blur(30px) saturate(180%);
+  -webkit-backdrop-filter: blur(30px) saturate(180%);
+  color: var(--text-primary);
+  max-height: min(86dvh, 820px);
+  box-shadow:
+    inset 0 1px 0.5px var(--glass-top-gleam),
+    0 36px 90px -20px rgba(0, 0, 0, 0.88);
+  opacity: 0;
+  transition-property: opacity, transform, display, overlay;
+  transition-duration: 0.32s;
+  transition-timing-function: var(--ease-apple);
+  transition-behavior: allow-discrete;
+
+  @media (prefers-reduced-motion: no-preference) {
+    transform: translateY(14px) scale(0.96);
+  }
+}
+
+.salon-dialog-wide {
+  width: min(980px, calc(100vw - 1.5rem));
+}
+
+.salon-dialog-medium {
+  width: min(620px, calc(100vw - 1.5rem));
+}
+
+.salon-dialog::backdrop {
+  background-color: rgba(8, 3, 12, 0);
+  backdrop-filter: blur(0px);
+  transition-property: background-color, backdrop-filter, display, overlay;
+  transition-duration: 0.32s;
+  transition-timing-function: var(--ease-apple);
+  transition-behavior: allow-discrete;
+}
+
+:is(.salon-dialog[open]):where(:not([data-closing])) {
+  display: flex;
+  opacity: 1;
+
+  @starting-style {
+    opacity: 0;
+  }
+
+  @media (prefers-reduced-motion: no-preference) {
+    transform: translateY(0) scale(1);
+
+    @starting-style {
+      transform: translateY(14px) scale(0.96);
+    }
+  }
+
+  &::backdrop {
+    background-color: rgba(8, 3, 12, 0.7);
+    backdrop-filter: blur(14px);
+
+    @starting-style {
+      background-color: rgba(8, 3, 12, 0);
+      backdrop-filter: blur(0px);
+    }
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .salon-dialog,
+  .salon-dialog::backdrop {
+    transition-duration: 0.12s;
+  }
+}
+
+.dialog-inner {
+  width: 100%;
+  max-height: min(86dvh, 820px);
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  padding: 1.5rem 1.6rem;
+}
+
+.dialog-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 1rem;
+  margin-bottom: 1.1rem;
+}
+
+.dialog-head h2 {
+  margin: 0.3rem 0 0;
+  font-family: var(--font-serif-zh);
+  font-weight: 500;
+  font-size: 1.35rem;
+}
+
+.dialog-close-btn {
+  appearance: none;
+  width: 2.1rem;
+  height: 2.1rem;
+  border-radius: 50%;
+  border: 1px solid rgba(255, 240, 224, 0.2);
+  background: rgba(255, 248, 240, 0.08);
+  color: var(--text-secondary);
+  cursor: pointer;
+}
+
+.dialog-close-btn:hover {
+  background: rgba(250, 224, 176, 0.22);
+  color: var(--text-primary);
+}
+
+.compendium-filters {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.42rem;
+  margin-bottom: 1.15rem;
+}
+
+.filter-chip {
+  appearance: none;
+  border: 1px solid rgba(255, 240, 224, 0.14);
+  background: rgba(255, 248, 240, 0.05);
+  color: var(--text-secondary);
+  border-radius: 999px;
+  padding: 0.34rem 0.85rem;
+  font-size: 0.76rem;
+  cursor: pointer;
+}
+
+.filter-chip.is-active {
+  background: rgba(250, 224, 176, 0.22);
+  border-color: var(--gold-bright);
+  color: var(--text-primary);
+}
+
+.compendium-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(136px, 1fr));
+  gap: 0.95rem;
+}
+
+.compendium-item {
+  appearance: none;
+  border: none;
+  background: none;
+  padding: 0;
+  color: var(--text-primary);
+  text-align: center;
+  cursor: pointer;
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  body:not(.is-motion-paused) #compendium-dialog[open]:not([data-closing]) .compendium-item:not(:focus-visible) {
+    animation: compendium-card-in 280ms var(--ease-apple) backwards;
+    animation-delay: calc(min(var(--stagger-idx), 14) * 12ms);
+  }
+}
+
+@keyframes compendium-card-in {
+  from { opacity: 0; transform: translateY(7px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.compendium-item-label {
+  display: block;
+  margin-top: 0.45rem;
+  font-family: var(--font-serif-zh);
+  font-size: 0.84rem;
+}
+
+.card-detail-body {
+  display: grid;
+  grid-template-columns: 196px 1fr;
+  gap: 1.4rem;
+  align-items: start;
+}
+
+.detail-keywords {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.38rem;
+  margin-bottom: 0.85rem;
+}
+
+.detail-kw {
+  font-size: 0.72rem;
+  padding: 0.22rem 0.62rem;
+  border-radius: 999px;
+  background: rgba(250, 224, 176, 0.14);
+  color: var(--gold-bright);
+}
+
+.detail-voice {
+  margin: 0 0 0.95rem;
+  font-size: 0.9rem;
+  line-height: 1.76;
+}
+
+.detail-dl {
+  margin: 0;
+  display: grid;
+  gap: 0.68rem;
+}
+
+.detail-dl div {
+  padding: 0.68rem 0.85rem;
+  border-radius: 16px;
+  background: rgba(10, 4, 14, 0.5);
+  border: 1px solid rgba(255, 240, 224, 0.07);
+}
+
+.detail-dl dt {
+  font-size: 0.72rem;
+  color: var(--gold-bright);
+  margin-bottom: 0.22rem;
+}
+
+.detail-dl dd {
+  margin: 0;
+  font-size: 0.83rem;
+  line-height: 1.62;
+  color: var(--text-secondary);
+}
+
+.journal-entries {
+  display: flex;
+  flex-direction: column;
+  gap: 0.85rem;
+}
+
+.journal-empty {
+  padding: 2rem 1rem;
+  text-align: center;
+  border-radius: 18px;
+  border: 1px dashed rgba(250, 224, 176, 0.24);
+  color: var(--text-secondary);
+  font-size: 0.86rem;
+}
+
+.journal-card {
+  padding: 1rem 1.1rem;
+  border-radius: 18px;
+  background: rgba(10, 4, 14, 0.52);
+  border: 1px solid rgba(250, 224, 176, 0.18);
+}
+
+.journal-card-head {
+  font-size: 0.74rem;
+  color: var(--gold-bright);
+  margin-bottom: 0.35rem;
+}
+
+.journal-card-q {
+  margin: 0 0 0.45rem;
+  font-family: var(--font-serif-zh);
+  font-size: 0.96rem;
+}
+
+.journal-card-cards {
+  font-size: 0.79rem;
+  color: var(--text-secondary);
+  margin-bottom: 0.5rem;
+}
+
+.journal-card-summary {
+  margin: 0 0 0.68rem;
+  font-size: 0.82rem;
+  line-height: 1.65;
+  color: var(--text-tertiary);
+}
+
+.journal-reflection-input {
+  width: 100%;
+  padding: 0.48rem 0.72rem;
+  border-radius: 12px;
+  border: 1px solid rgba(250, 224, 176, 0.2);
+  background: rgba(18, 9, 24, 0.75);
+  color: var(--text-primary);
+  font-size: 0.79rem;
+}
+
+.salon-toast {
+  position: fixed;
+  top: 4.3rem;
+  left: 50%;
+  transform: translate3d(-50%, -8px, 0) scale(0.95);
+  opacity: 0;
+  pointer-events: none;
+  z-index: 65;
+  padding: 0.52rem 1.15rem;
+  border-radius: 999px;
+  background: rgba(250, 224, 176, 0.96);
+  color: #1c0c1b;
+  font-size: 0.8rem;
+  font-weight: 600;
+  box-shadow: 0 14px 34px rgba(0, 0, 0, 0.52);
+  max-width: calc(100vw - 2rem);
+  text-align: center;
+  transition: opacity 0.28s var(--ease-apple), transform 0.28s var(--ease-apple);
+}
+
+.salon-toast.is-shown {
+  opacity: 1;
+  transform: translate3d(-50%, 0, 0) scale(1);
+}
+
+/* 8. 移动端 <768px 响应式适配 */
+@media (max-width: 767px) {
+  .brand-sub {
+    display: none;
+  }
+
+  .diana-dock-wrap {
+    bottom: calc(0.75rem + env(safe-area-inset-bottom));
+    padding: 0 0.6rem;
+  }
+
+  .diana-dock {
+    padding: 0.95rem 1rem 1rem;
+    border-radius: 24px;
+  }
+
+  .choice-row-3 {
+    grid-template-columns: 1fr;
+    gap: 0.4rem;
+  }
+
+  .choice-grid-4 {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .situation-list {
+    grid-template-columns: 1fr;
+  }
+
+  .ritual-top-bar {
+    top: calc(3.85rem + env(safe-area-inset-top));
+  }
+
+  .ritual-status-pill {
+    flex-wrap: wrap;
+    justify-content: center;
+    border-radius: 20px;
+  }
+
+  .action-choices-wrap {
+    grid-template-columns: 1fr;
+  }
+
+  .card-detail-body {
+    grid-template-columns: 1fr;
+  }
+
+  .card-detail-body .holo-card-surface {
+    max-width: 175px;
+    margin: 0 auto;
+  }
+}
+
+@media (max-width: 1024px) and (orientation: portrait) {
+  .reading-panel {
+    top: auto;
+    left: calc(0.55rem + env(safe-area-inset-left));
+    right: calc(0.55rem + env(safe-area-inset-right));
+    bottom: calc(0.55rem + env(safe-area-inset-bottom));
+    width: auto;
+    height: 43dvh;
+  }
+}
+
+/* 平面牌桌与加载状态 */
+#salon-canvas[hidden] {
+  visibility: hidden;
+  pointer-events: none;
+}
+
+.stage-notice {
+  position: fixed;
+  z-index: 23;
+  left: 50%;
+  top: calc(4.1rem + env(safe-area-inset-top));
+  transform: translateX(-50%);
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  white-space: nowrap;
+  font-size: 0.8rem;
+  color: var(--text-secondary);
+}
+
+.stage-notice[hidden],
+body.is-ritual-mode .stage-notice {
+  display: none;
+}
+
+.flat-stage {
+  position: fixed;
+  inset: calc(6.8rem + env(safe-area-inset-top)) max(0.75rem, env(safe-area-inset-right)) 30% max(0.75rem, env(safe-area-inset-left));
+  display: flex;
+  align-items: center;
+  justify-content: safe center;
+  gap: clamp(0.35rem, 1vw, 0.85rem);
+  overflow: auto;
+  overscroll-behavior: contain;
+  padding: 0.35rem;
+}
+
+.flat-stage[hidden] {
+  display: none;
+}
+
+body:has(#salon-canvas[hidden]) .stage-wrap {
+  background: radial-gradient(ellipse at 50% 38%, #301629 0%, #1a0d20 51%, #100818 86%);
+}
+
+body.is-ritual-mode .flat-stage {
+  inset-block-end: calc(0.65rem + env(safe-area-inset-bottom));
+}
+
+body.is-ritual-mode .flat-stage[data-mode="reading"] {
+  inset-inline-end: min(465px, 45vw);
+  inset-block-start: 7.4rem;
+}
+
+.flat-stage[data-mode="picking"] {
+  flex-direction: column;
+}
+
+.flat-face {
+  appearance: none;
+  display: block;
+  width: clamp(64px, 19vmin, 152px);
+  padding: 0;
+  border: 0;
+  border-radius: 12px;
+  background: transparent;
+  cursor: pointer;
+}
+
+.flat-face.is-highlighted,
+.flat-face.is-paired {
+  outline: 1px solid var(--gold-mid);
+  outline-offset: 3px;
+}
+
+.flat-back {
+  aspect-ratio: 2 / 3;
+  border: 1px solid #a17c51;
+  border-radius: 8px;
+  background: #2d1d28 url("./assets/art/ea6a923413e0/card_back.webp") center / cover;
+}
+
+.flat-stage[data-mode="preview"] .flat-back {
+  width: min(7.5vw, 64px);
+}
+
+.flat-fan {
+  display: grid;
+  width: min(100%, 720px);
+  grid-template-columns: repeat(12, minmax(0, 1fr));
+  gap: clamp(0.22rem, 0.7vw, 0.5rem);
+}
+
+.flat-fan .flat-back {
+  cursor: pointer;
+}
+
+.flat-fan .flat-back:disabled {
+  opacity: 0.3;
+  cursor: default;
+}
+
+.flat-back:focus-visible,
+.flat-face:focus-visible,
+.dialog-close-btn:focus-visible {
+  outline: 2px solid var(--gold-bright);
+  outline-offset: 2px;
+}
+
+.flat-revealed {
+  display: flex;
+  justify-content: center;
+  gap: 0.4rem;
+  width: min(100%, 900px);
+}
+
+.flat-revealed .flat-face {
+  min-width: 0;
+  width: min(100%, 120px);
+}
+
+.flat-stage[data-mode="picking"] .flat-face {
+  width: min(10%, 62px);
+}
+
+.demo-caption {
+  color: var(--text-secondary);
+  margin: 0 0 0.55rem;
+  font-size: 0.9rem;
+}
+
+.question-error {
+  color: #ffc2cf;
+  font-size: 0.85rem;
+  margin: 0.55rem 0 0;
+}
+
+.diana-dock-wrap {
+  bottom: calc(1.25rem + max(env(safe-area-inset-bottom), var(--keyboard-inset, 0px)));
+}
+
+.diana-dock {
+  max-height: calc(100dvh - 5.5rem - env(safe-area-inset-top) - max(env(safe-area-inset-bottom), var(--keyboard-inset, 0px)));
+  overflow-y: auto;
+  overscroll-behavior: contain;
+}
+
+.reading-sheet {
+  flex-direction: column;
+  background: #211327;
+}
+
+.reading-controls {
+  display: flex;
+  justify-content: flex-end;
+  padding: 0.6rem 0.85rem 0;
+}
+
+.reading-scroll-inner {
+  flex: 1;
+  min-height: 0;
+}
+
+.reading-sheet > .reading-footer-actions {
+  flex: none;
+  margin: 0;
+  border-top: 1px solid var(--glass-border);
+  padding: 0.65rem 0.9rem;
+}
+
+.reading-panel.is-expanded {
+  top: calc(4rem + env(safe-area-inset-top));
+  left: calc(0.55rem + env(safe-area-inset-left));
+  right: calc(0.55rem + env(safe-area-inset-right));
+  bottom: calc(0.55rem + env(safe-area-inset-bottom));
+  width: min(750px, calc(100% - 1.1rem - env(safe-area-inset-left) - env(safe-area-inset-right)));
+  height: auto;
+  margin-inline: auto;
+}
+
+body:has(.reading-panel.is-expanded) .ritual-overlay {
+  z-index: 31;
+}
+
+.journal-export {
+  margin-bottom: 0.85rem;
+}
+
+.saved-reading-body {
+  line-height: 1.68;
+}
+
+.saved-reading-body p {
+  color: var(--text-secondary);
+}
+
+.saved-card-note {
+  display: grid;
+  grid-template-columns: 58px 1fr;
+  gap: 0.85rem;
+  align-items: center;
+  margin-block: 0.85rem;
+}
+
+.saved-card-note h4,
+.saved-card-note p {
+  margin-block: 0.22rem;
+}
+
+.saved-reading-body details {
+  padding-block: 0.5rem;
+  border-top: 1px solid var(--glass-border);
+}
+
+.saved-reading-body summary {
+  cursor: pointer;
+}
+
+.step-dot,
+.whisper-back-btn,
+.whisper-link-btn,
+.choice-sub {
+  color: var(--text-secondary);
+}
+
+@media (pointer: coarse) {
+  .nav-pill-btn, .nav-icon-btn, .whisper-link-btn, .whisper-back-btn,
+  .dialog-close-btn, .filter-chip, .ghost-pill-btn, .sparkle-pill-btn,
+  .apple-mini-confirm, .voice-read-pill {
+    min-height: 44px;
+  }
+
+  .nav-icon-btn, .dialog-close-btn {
+    min-width: 44px;
+    justify-content: center;
+  }
+
+  .fluid-island {
+    gap: 0.32rem;
+    padding: 0.22rem 0.4rem 0.22rem 0.62rem;
+  }
+
+  .island-actions {
+    gap: 0.2rem;
+  }
+
+  .nav-pill-btn {
+    padding-inline: 0.56rem;
+  }
+
+  .stage-notice, .ritual-top-bar {
+    top: calc(4.45rem + env(safe-area-inset-top));
+  }
+
+  .reading-panel.is-expanded {
+    top: calc(4.45rem + env(safe-area-inset-top));
+  }
+
+  .step-dot, .whisper-link-btn, .whisper-back-btn, .choice-sub {
+    font-size: 0.82rem;
+  }
+
+  .reading-scroll-inner p, .pair-item-desc, .drawn-row-hint {
+    font-size: 0.9375rem;
+  }
+
+  .apple-inline-input, .journal-reflection-input {
+    font-size: 16px;
+  }
+}
+
+@media (max-width: 767px) {
+  .diana-dock-wrap {
+    bottom: calc(0.65rem + max(env(safe-area-inset-bottom), var(--keyboard-inset, 0px)));
+  }
+
+  .flat-back {
+    background-image: url("./assets/art/ea6a923413e0/mobile/card_back.webp");
+  }
+
+  .flat-fan {
+    grid-template-columns: repeat(7, minmax(0, 1fr));
+  }
+
+  .reading-scroll-inner {
+    padding: 0.75rem 0.95rem 1rem;
+  }
+}
+
+@media (max-width: 1024px) and (orientation: portrait) {
+  body.is-ritual-mode .flat-stage[data-mode="reading"] {
+    inset: calc(8.25rem + env(safe-area-inset-top)) 0.7rem calc(44dvh + env(safe-area-inset-bottom)) 0.7rem;
+  }
+
+  .flat-stage[data-mode="reading"] .flat-revealed:has(.flat-face:nth-child(5)) {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    width: min(53vw, 220px);
+  }
+
+  .reading-sheet > .reading-footer-actions {
+    padding: 0.45rem;
+    justify-content: center;
+  }
+}
+
+@media (max-height: 520px) and (orientation: landscape) {
+  .flat-fan {
+    grid-template-columns: repeat(12, minmax(0, 1fr));
+    width: min(100%, 560px);
+  }
+
+  .reading-panel:not(.is-expanded) {
+    width: min(410px, 47vw);
+  }
+}
+
+@media (max-width: 767px) and (orientation: portrait) {
+  .flat-stage:is([data-mode="onboarding"], [data-mode="topic"]) .flat-face {
+    width: min(29vw, 115px);
+  }
+}
+
+@font-face {
+  font-family: "Cormorant Garamond";
+  src: url("./assets/fonts/cormorant-garamond-latin-600-normal.woff2") format("woff2");
+  font-style: normal;
+  font-weight: 600;
+  font-display: swap;
+}
+
+@media (max-width: 360px) and (orientation: portrait) {
+  .flat-fan {
+    grid-template-columns: repeat(6, minmax(0, 1fr));
+  }
+}
+
+.stage-notice {
+  width: max-content;
+  max-width: calc(100% - 1.1rem);
+  white-space: normal;
+}
+
+.stage-notice button {
+  flex: none;
+}
+
+body:has(.has-keyboard) .stage-notice {
+  visibility: hidden;
+}
+
+.apple-inline-input {
+  min-width: 0;
+}
+
+.apple-mini-confirm {
+  flex: none;
+  white-space: nowrap;
+}
+
+@media (max-width: 360px) and (pointer: coarse) {
+  .brand-serif {
+    font-size: 1rem;
+  }
+
+  .fluid-island {
+    padding-inline: 7px;
+    gap: 4px;
+  }
+
+  .island-actions {
+    gap: 3px;
+  }
+
+  .nav-pill-btn {
+    padding-inline: 6px;
+  }
+}
