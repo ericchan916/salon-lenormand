@@ -4,6 +4,20 @@ Salon de Lenormand 是一个可在浏览器里运行的雷诺曼牌桌。全套 
 
 [体验网页版](https://salon-lenormand.pages.dev/)
 
+## 界面截图
+
+### 桌面牌桌
+
+![Diana 雷诺曼夜沙龙首页，三维牌桌上展示心牌和戒指牌](docs/screenshots/desktop-salon.jpg)
+
+### 三牌连读
+
+![左侧是三维牌阵，右侧是牌眼、双牌连读与手札操作](docs/screenshots/desktop-reading.jpg)
+
+### 手机版牌典
+
+<img src="docs/screenshots/mobile-compendium.jpg" width="390" alt="手机竖屏中的雷诺曼牌典，展示色调筛选和前四张牌">
+
 ## 本地运行
 
 克隆仓库或解压 ZIP 后，在项目根目录启动静态服务。
