@@ -14,6 +14,16 @@ Salon de Lenormand 是一个可在浏览器里运行的雷诺曼牌桌。全套 
 
 ![左侧是三维牌阵，右侧是牌眼、双牌连读与手札操作](docs/screenshots/desktop-reading.jpg)
 
+### 手机选牌
+
+每组六张。轻点抬牌，再点收回，也可以横划连选。抬起牌上的小圆标是入阵顺序，确认后按这个顺序翻开。
+
+<img src="docs/screenshots/mobile-picking.jpg" width="390" alt="手机三维牌桌上已翻开一张牌，手牌中两张抬起，标出入阵顺序">
+
+### 手机平面牌桌
+
+<img src="docs/screenshots/mobile-flat-picking.jpg" width="390" alt="关闭 WebGL 后的手机牌桌，已翻出的牌、当前牌位和可连选的手牌">
+
 ### 手机版牌典
 
 <img src="docs/screenshots/mobile-compendium.jpg" width="390" alt="手机竖屏中的雷诺曼牌典，展示色调筛选和前四张牌">

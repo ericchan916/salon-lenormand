@@ -183,6 +183,18 @@
       </div>
     </div>
 
+    <div id="touch-pick" class="touch-pick" hidden>
+      <p class="pick-slot" id="pick-slot"></p>
+      <div class="hand-cards" role="group" aria-label="暗牌，按选中顺序入阵"></div>
+      <div class="pick-controls">
+        <button type="button" id="pick-prev" aria-label="上一组"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m14 6-6 6 6 6"/></svg></button>
+        <span id="pick-page"></span>
+        <button type="button" id="pick-next" aria-label="下一组"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m10 6 6 6-6 6"/></svg></button>
+        <button type="button" id="pick-confirm" disabled>抽这张</button>
+      </div>
+      <p class="pick-hint">轻点选牌，再点收回 · 横划连选</p>
+    </div>
+
     <!-- 右侧 Diana 深度解牌手记面板（唯一详尽展开人味化解读的界面） -->
     <aside id="reading-panel" class="reading-panel" hidden aria-label="Diana 雷诺曼连读分析">
       <div class="apple-glass-sheet reading-sheet">

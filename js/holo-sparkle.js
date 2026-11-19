@@ -63,7 +63,7 @@ function tickHoloCards(now) {
   holoRafId = activeHoloCards.size ? requestAnimationFrame(tickHoloCards) : null;
 }
 
-function attachHoloCard(card, face, maxTilt) {
+function attachHoloCard(card, face, maxTilt, detail) {
   const rx = new AppleSpring(0, { damping: 0.84, response: 0.34 });
   const ry = new AppleSpring(0, { damping: 0.84, response: 0.34 });
   const scale = new AppleSpring(1, { damping: 0.84, response: 0.25 });
@@ -84,6 +84,35 @@ function attachHoloCard(card, face, maxTilt) {
     wake();
   };
 
+  if (detail) {
+    let finger = null;
+    const endTilt = () => {
+      if (!finger) return;
+      finger = null;
+      card.classList.remove('is-tilting');
+      reset();
+    };
+    card.addEventListener('pointerdown', event => {
+      if (event.pointerType !== 'touch' || pause()) return;
+      if (!event.isPrimary) { endTilt(); return; }
+      finger = { id: event.pointerId, x: event.clientX, y: event.clientY };
+    });
+    card.addEventListener('pointermove', event => {
+      if (event.pointerId !== finger?.id) return;
+      const dx = event.clientX - finger.x;
+      const dy = event.clientY - finger.y;
+      if (Math.abs(dx) < 6 || pause()) return;
+      card.classList.add('is-tilting');
+      ry.setTarget(Math.max(-1, Math.min(1, dx / 78)) * maxTilt);
+      rx.setTarget(Math.max(-1, Math.min(1, -dy / 96)) * maxTilt * 0.5);
+      face.style.setProperty('--foil-shift', `${Math.max(-38, Math.min(38, dx / 2))}%`);
+      wake();
+    });
+    card.addEventListener('pointerup', endTilt);
+    card.addEventListener('lostpointercapture', endTilt);
+    card.addEventListener('pointercancel', endTilt);
+  }
+
   card.addEventListener('pointermove', event => {
     if (!finePointer.matches || event.pointerType === 'touch' || pause()) return;
     const rect = card.getBoundingClientRect();
@@ -96,7 +125,7 @@ function attachHoloCard(card, face, maxTilt) {
   card.addEventListener('pointercancel', reset);
 }
 
-export function buildNakedEyeDioramaCard(card, { maxTilt = 12 } = {}) {
+export function buildNakedEyeDioramaCard(card, { maxTilt = 12, detail = false } = {}) {
   const root = document.createElement('div');
   root.className = 'diorama-card holo-card-surface';
   root.dataset.dioramaCardId = String(card.id);
@@ -116,7 +145,7 @@ export function buildNakedEyeDioramaCard(card, { maxTilt = 12 } = {}) {
 
   face.append(label, image);
   root.append(face);
-  attachHoloCard(root, face, maxTilt);
+  attachHoloCard(root, face, maxTilt, detail);
   return root;
 }
 
@@ -145,7 +174,7 @@ export class SparkleAtelier {
       window.addEventListener('resize', () => this.resize());
       window.addEventListener('pointermove', (e) => this.onMove(e), { passive: true });
       window.addEventListener('pointerdown', (e) => {
-        if (!this.paused && !this.reduced) {
+        if (!this.paused && !this.reduced && !e.target.closest?.('#touch-pick')) {
           this.burst(e.clientX, e.clientY, 9);
         }
       }, { passive: true });

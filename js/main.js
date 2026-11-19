@@ -9,6 +9,7 @@ import {
 import { cardFaceUrl } from './card-art.js';
 import { DianaVoiceReader, SoundAtelier } from './sound-atelier.js';
 import { buildSalonReading } from './reading-engine.js';
+import { TouchHand } from './fan-touch.js';
 import { FlatSalonScene } from './flat-scene.js';
 import {
   attachGlassRimGlow,
@@ -843,17 +844,34 @@ function bootDianaSalon() {
   let salonScene;
   let loading3D = false;
 
+  const touchPick = document.getElementById('touch-pick');
+  const hand = matchMedia('(pointer: coarse)').matches ? new TouchHand(touchPick, choices => {
+    salonScene.dealHand(choices);
+  }, busy => { quickDrawBtn.disabled = busy; }) : null;
+  const pickSlot = document.getElementById('pick-slot');
+  function showPickSlot(drawn) {
+    const position = SPREAD_CONFIGS[activeRound.spread].positions[drawn];
+    pickSlot.textContent = `第 ${drawn + 1} 张 · ${position.label}`;
+    touchPick.hidden = !hand;
+  }
+
   const callbacks = {
     onCardDetail: openCardDetailModal,
     onPickingReady(drawn, total) {
       hudProgress.textContent = `轻点挑牌 ${drawn} / ${total}`;
       quickDrawBtn.hidden = false;
+      quickDrawBtn.disabled = false;
+      hand?.start(total, LENORMAND_CARDS.length);
+      showPickSlot(drawn);
     },
-    onCardPicked(drawn, total, cardData) {
+    onCardPicked(drawn, total, cardData, rank) {
+      hand?.dealt(rank);
       sparkle.burst(window.innerWidth * 0.45, window.innerHeight * 0.48, 14);
       if (drawn < total) {
+        if (!quickDrawBtn.hidden) showPickSlot(drawn);
         hudProgress.textContent = `已翻「${cardData.zh}」· ${drawn} / ${total}`;
       } else {
+        touchPick.hidden = true;
         hudProgress.textContent = 'Diana 正在连读…';
         quickDrawBtn.hidden = true;
       }
@@ -951,6 +969,7 @@ function bootDianaSalon() {
     dock.inert = true;
     ritualOverlay.hidden = false;
     closeReadingSheet();
+    touchPick.hidden = true;
     quickDrawBtn.hidden = true;
     hudSpreadName.textContent = `${cfg.roman} · ${cfg.name}`;
     hudProgress.textContent = '正在洗牌…';
@@ -966,6 +985,7 @@ function bootDianaSalon() {
     document.body.classList.remove('is-ritual-mode');
     dock.inert = false;
     closeReadingSheet();
+    touchPick.hidden = true;
     ritualOverlay.hidden = true;
     goToStep(targetStep, { subStageB: false, salonScene, direction: -1 });
   };
@@ -1011,15 +1031,18 @@ function bootDianaSalon() {
     sound.playUiTap();
     closeReadingSheet();
     state.currentReading = null;
+    touchPick.hidden = true;
     quickDrawBtn.hidden = true;
     hudProgress.textContent = '重新洗牌…';
     salonScene.startShuffleRitual();
   });
 
   quickDrawBtn.addEventListener('click', () => {
+    const origin = hand?.cards.getBoundingClientRect();
+    touchPick.hidden = true;
     sound.playUiTap();
     quickDrawBtn.hidden = true;
-    salonScene.quickDrawRemaining();
+    salonScene.quickDrawRemaining(origin);
   });
 
   document.getElementById('btn-save-reading').addEventListener('click', (e) => {
@@ -1130,7 +1153,7 @@ function bootDianaSalon() {
       return;
     }
     if (e.key === 'Escape' && readingPanel.classList.contains('is-expanded')) setReadingExpanded(false);
-    if (e.target === canvas && salonScene.mode === 'picking') {
+    if (!hand && e.target === canvas && salonScene.mode === 'picking') {
       if (e.key === 'ArrowRight') {
         e.preventDefault();
         salonScene.stepKeyboardFocus(1);

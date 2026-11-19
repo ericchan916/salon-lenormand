@@ -61,9 +61,13 @@ const LASER_HOLO_VERTEX = /* glsl */ `
 
   void main() {
     vUv = uv;
-    vec4 wp = modelMatrix * vec4(position, 1.0);
+    mat4 world = modelMatrix;
+    #ifdef USE_INSTANCING
+      world = modelMatrix * instanceMatrix;
+    #endif
+    vec4 wp = world * vec4(position, 1.0);
     vWorldPos = wp.xyz;
-    vWorldNormal = normalize(mat3(modelMatrix) * normal);
+    vWorldNormal = normalize(mat3(world) * normal);
     gl_Position = projectionMatrix * viewMatrix * wp;
   }
 `;
@@ -246,6 +250,8 @@ export class SalonScene {
     this.textureLoader = new THREE.TextureLoader();
     this.coarsePointer = matchMedia('(pointer: coarse)').matches;
     this.modalOpen = false;
+    this.frameWindow = null;
+    this.lastResolutionDrop = 0;
 
     this.mode = 'onboarding';
     this.spreadId = 'line3';
@@ -860,7 +866,47 @@ export class SalonScene {
         c.mesh.add(clone, simpleRim);
         this.updateCardDetail(c);
       });
+      if (this.coarsePointer) this.buildBackBatches();
     });
+  }
+
+  buildBackBatches() {
+    // Face-down cards share the same artwork and edge. Keep individual hit boxes and springs.
+    const first = this.cards[0];
+    const back = first.visualNode.getObjectByName('CardBackCanvas');
+    if (!back?.isMesh) return;
+    first.mesh.updateWorldMatrix(true, true);
+    const inverseRoot = first.mesh.matrixWorld.clone().invert();
+    this.batchTransform = new THREE.Matrix4();
+    this.backBatches = [back, first.simpleRim].map(source => {
+      const batch = new THREE.InstancedMesh(source.geometry, source.material, this.cards.length);
+      batch.count = 0;
+      batch.instanceMatrix.setUsage(THREE.DynamicDrawUsage);
+      batch.frustumCulled = false;
+      batch.castShadow = source.castShadow;
+      this.deckGroup.add(batch);
+      return { batch, local: inverseRoot.clone().multiply(source.matrixWorld) };
+    });
+  }
+
+  writeBackBatches() {
+    let count = 0;
+    for (const card of this.cards) {
+      const batched = !card.flight.active && !card.detailed &&
+        Math.abs(card.mesh.rotation.x) < 0.5 && Math.abs(card.mesh.rotation.z) < 0.5;
+      card.visualNode.visible = !batched;
+      card.simpleRim.visible = !batched && !card.detailed;
+      if (!batched || !card.mesh.visible) continue;
+      card.mesh.updateMatrix();
+      for (const { batch, local } of this.backBatches) {
+        batch.setMatrixAt(count, this.batchTransform.multiplyMatrices(card.mesh.matrix, local));
+      }
+      count++;
+    }
+    for (const { batch } of this.backBatches) {
+      batch.count = count;
+      batch.instanceMatrix.needsUpdate = true;
+    }
   }
 
   updateCardDetail(card) {
@@ -1270,7 +1316,14 @@ export class SalonScene {
     this.mode = 'picking';
     this.updateCameraForViewport();
 
-    if (staggerCascade && !this.reducedMotion && !this.motionPaused) {
+    if (this.coarsePointer) {
+      // The touch hand owns face-down cards while the table shows the open spread.
+      this.deckOrder.forEach((index, rank) => {
+        const card = this.cards[index];
+        card.targetPos.set(0, 0.022 + rank * 0.0165, 1.65);
+        card.targetYaw = 0;
+      });
+    } else if (staggerCascade && !this.reducedMotion && !this.motionPaused) {
       // 先迅速聚拢至左端发牌点，随后以 12ms 级联差依次铺开成完美弧扇，同时立即可交互！
       const isPortrait = window.innerWidth < 768;
       const startTheta = -(isPortrait ? 0.58 : 0.54);
@@ -1325,6 +1378,7 @@ export class SalonScene {
 
   // Balatro / Cover-Flow 级波浪抚牌扇弧（悬停牌高抬滑出 + 邻牌平滑高斯波浪退让，严格分层零穿模！）
   layoutRemainingArc() {
+    if (this.coarsePointer) return;
     const isPortrait = window.innerWidth < 768;
     const arcRadius = isPortrait ? 3.15 : 4.55;
     const arcCenterZ = isPortrait ? 4.35 : 5.55;
@@ -1376,7 +1430,14 @@ export class SalonScene {
     });
   }
 
-  pickCardState(cardState) {
+  dealHand(choices) {
+    choices.forEach(({rank, origin}, i) => {
+      const card = this.cards[this.deckOrder[rank]];
+      this.queueTimer(() => this.pickCardState(card, origin), this.motionPaused || this.reducedMotion ? 0 : i * 135);
+    });
+  }
+
+  pickCardState(cardState, origin) {
     if (this.mode !== 'picking' || !cardState || cardState.isDrawn) return;
     const config = SPREAD_CONFIGS[this.spreadId];
     const slotIndex = this.drawnCards.length;
@@ -1392,6 +1453,14 @@ export class SalonScene {
     const finalScale = isMobile ? baseScale * 0.88 : baseScale;
 
     const endPos = new THREE.Vector3(slot.x, 0.030 + slotIndex * 0.004, slot.z - 0.22);
+    if (origin) {
+      this.updatePointer(origin.left + origin.width / 2, origin.top + origin.height / 2);
+      this.raycaster.setFromCamera(this.pointer, this.camera);
+      const handPlane = this.tablePlane.clone();
+      handPlane.constant = -0.78;
+      this.raycaster.ray.intersectPlane(handPlane, cardState.mesh.position);
+      cardState.mesh.rotation.set(0, 0, 0);
+    }
     this.launchCardFlight(cardState, endPos, slot.yaw || 0, Math.PI, {
       peakY: 1.66,
       duration: 0.72,
@@ -1405,14 +1474,14 @@ export class SalonScene {
     this.layoutRemainingArc();
 
     const drawnCount = this.drawnCards.length;
-    this.callbacks.onCardPicked?.(drawnCount, config.count, cardState.data);
+    this.callbacks.onCardPicked?.(drawnCount, config.count, cardState.data, this.deckOrder.indexOf(cardState.index));
 
     if (drawnCount >= config.count) {
       this.finishSpread();
     }
   }
 
-  quickDrawRemaining() {
+  quickDrawRemaining(origin) {
     if (this.mode !== 'picking') return;
     const config = SPREAD_CONFIGS[this.spreadId];
     const needed = config.count - this.drawnCards.length;
@@ -1422,25 +1491,25 @@ export class SalonScene {
       const pickRank = Math.floor((i + 0.5) * (remaining.length / needed));
       const state = this.cards[remaining[pickRank]];
       this.queueTimer(() => {
-        this.pickCardState(state);
+        this.pickCardState(state, origin);
       }, i * (this.reducedMotion ? 40 : 185));
     }
   }
 
-  // 遵循 Emil 准则：键盘操作干脆无粘滞，立即定位高亮
+  selectFanRank(rank) {
+    const remaining = this.deckOrder.filter(index => !this.cards[index].isDrawn);
+    this.focusedCardIndex = rank;
+    this.setHoveredCard(this.cards[remaining[rank]] || null);
+    return this.hoveredCard;
+  }
+
   stepKeyboardFocus(delta) {
     if (this.mode !== 'picking') return null;
     const remaining = this.deckOrder.filter((idx) => !this.cards[idx].isDrawn);
     if (!remaining.length) return null;
-    if (this.focusedCardIndex < 0) {
-      this.focusedCardIndex = Math.floor(remaining.length / 2);
-    } else {
-      this.focusedCardIndex = (this.focusedCardIndex + delta + remaining.length) % remaining.length;
-    }
-    this.hoveredCard = this.cards[remaining[this.focusedCardIndex]];
-    this.layoutRemainingArc();
-    this.sound?.playCardHover();
-    return this.hoveredCard;
+    const rank = this.focusedCardIndex < 0 ? Math.floor(remaining.length / 2) :
+      (Math.min(this.focusedCardIndex, remaining.length - 1) + delta + remaining.length) % remaining.length;
+    return this.selectFanRank(rank);
   }
 
   confirmKeyboardPick() {
@@ -1515,9 +1584,16 @@ export class SalonScene {
       if (isPortrait) {
         this.camTargetPos.set(0, isGrid ? 7.9 : 7.2, isGrid ? 5.2 : 4.8);
         this.camTargetLook.set(0, 0, 0.48);
+        const fit = Math.max(1, 0.56 / this.camera.aspect);
+        this.camTargetPos.sub(this.camTargetLook).multiplyScalar(fit).add(this.camTargetLook);
       } else {
         this.camTargetPos.set(0, isGrid ? 5.85 : 5.35, isGrid ? 4.25 : 4.0);
         this.camTargetLook.set(0, 0, 0.38);
+      }
+      if (this.coarsePointer && window.innerHeight <= 520 && !isPortrait) {
+        const offset = this.camera.aspect * 0.87;
+        this.camTargetPos.x += offset;
+        this.camTargetLook.x += offset;
       }
     } else if (this.mode === 'reading') {
       const isGrid = this.spreadId === 'box9' || this.spreadId === 'cross5';
@@ -1562,6 +1638,7 @@ export class SalonScene {
         this.moveTouchGesture(e);
         return;
       }
+      if (this.coarsePointer && this.mode === 'picking') return;
       this.isTouchInput = false;
       this.updatePointer(e.clientX, e.clientY);
       this.updateHoverRaycast();
@@ -1571,6 +1648,7 @@ export class SalonScene {
       if (e.button !== 0 || this.renderer.getContext().isContextLost()) return;
       this.isTouchInput = e.pointerType === 'touch';
       if (this.isTouchInput) {
+        if (this.coarsePointer && this.mode === 'picking') return;
         this.cancelTouchGesture();
         if (e.isPrimary) {
           this.touchGesture = {
@@ -1653,7 +1731,7 @@ export class SalonScene {
   }
 
   activateAtPoint(x, y) {
-    if (this.renderer.getContext().isContextLost()) return;
+    if (this.renderer.getContext().isContextLost() || (this.coarsePointer && this.mode === 'picking')) return;
     this.updatePointer(x, y);
     this.updateHoverRaycast(!this.isTouchInput);
 
@@ -1724,7 +1802,31 @@ export class SalonScene {
   syncRenderLoop() {
     const paused = document.hidden || this.renderer.getContext().isContextLost();
     this.clock.getDelta();
+    this.frameWindow = null;
     this.renderer.setAnimationLoop(paused ? null : this.renderFrame);
+  }
+
+  adjustTouchResolution(seconds) {
+    // Ignore startup, interruptions and isolated stalls. Only resize after sustained pressure.
+    if (seconds <= 0 || seconds > 1) { this.frameWindow = null; return; }
+    const sample = this.frameWindow ??= { time: 0, frames: 0, slow: 0 };
+    sample.time += seconds;
+    sample.frames++;
+    if (seconds > 0.026) sample.slow++;
+    if (sample.time < 2) return;
+    const fraction = sample.slow / sample.frames;
+    this.frameWindow = null;
+    const ratio = this.renderer.getPixelRatio();
+    if (fraction > 0.7 && ratio > 0.8) {
+      this.renderer.setPixelRatio(Math.max(0.8, ratio - 0.25));
+      this.lastResolutionDrop = performance.now();
+    } else if (fraction < 0.05 && performance.now() - this.lastResolutionDrop > 10000) {
+      const ceiling = Math.min(this.pixelRatio, Math.sqrt(2200000 / (this.viewportWidth * this.viewportHeight)));
+      if (ratio < ceiling) {
+        this.renderer.setPixelRatio(Math.min(ceiling, ratio + 0.15));
+        this.lastResolutionDrop = performance.now();
+      }
+    }
   }
 
   onResize() {
@@ -1747,7 +1849,9 @@ export class SalonScene {
   }
 
   animate() {
-    const frameDelta = Math.min(this.clock.getDelta(), 0.08);
+    const elapsed = this.clock.getDelta();
+    if (this.coarsePointer && !this.modalOpen && this.viewportWidth) this.adjustTouchResolution(elapsed);
+    const frameDelta = Math.min(elapsed, 0.08);
     const dt = Math.min(frameDelta, 0.036);
     const motionActive = !this.motionPaused && !this.reducedMotion;
     if (motionActive) {
@@ -1852,6 +1956,7 @@ export class SalonScene {
 
     // 更新全部 36 张牌的二阶弹簧、气动侧倾与局部磁吸 3D 光标响应
     for (const c of this.cards) {
+      c.mesh.visible = !this.coarsePointer || this.mode !== 'picking' || c.isDrawn;
       const isHovered = this.hoveredCard === c;
       const isInspected = this.inspectedCard === c;
       const isPaired =
@@ -2037,6 +2142,9 @@ export class SalonScene {
     }
 
     this.camera.lookAt(this.camCurrentLook);
-    if (!this.modalOpen) this.renderer.render(this.scene, this.camera);
+    if (!this.modalOpen) {
+      if (this.backBatches) this.writeBackBatches();
+      this.renderer.render(this.scene, this.camera);
+    }
   }
 }
